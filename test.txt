@@ -1,0 +1,11 @@
+2021年9月3日20:45:51
+本地上传代码至github
+
+1. 进入目录并初始化 git init
+2. 将待提交的代码移动至该目录
+3. git add .  (命令将文件内容添加到索引，上传代码添加到缓存区)
+4. git commit -m "first commit" (新建提交命令，将更新的代码
+    提交到本地的版本库，引号内的内容为自己填，相当于此次操作的内容备注)
+5. git remote add origin https://github.com/yan40296/test.git
+ （把此目录添加远程仓库路径，地址填自己的仓库）
+6. git push -u origin master （上传代码到git仓库）
