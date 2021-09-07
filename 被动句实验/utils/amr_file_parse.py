@@ -1,9 +1,18 @@
 import re
 from tqdm import tqdm
-
+import time
 
 # 获得每个句子的信息
 def get_amr_data(filepath):
+    """
+    :param filepath: AMR文件名
+    :return: amr_parsed_data = {
+        amr_id: 句子索引
+        amr_snt： 句子的分词表示
+        amr_wid： 句子token下标
+        amr_graph： 句子的语义依存图
+    }
+    """
     amr_parsed_data = []
     file = open(filepath, "r", encoding="utf8")
     _ = file.readline()  # 前两行不含句子信息，跳过
@@ -30,23 +39,32 @@ def get_amr_data(filepath):
             if "#" in line:
                 # 解析id snt wid
                 tokens = line.strip().split()
-
                 if "::id" in tokens:
                     idx = tokens[2].split('.')
                     stn_detail["amr_id"] = int(idx[1])
                 elif "::snt" in tokens:
                     stn_detail["amr_snt"] = tokens[2:]
                 elif "::wid" in tokens:
-                    stn_detail["amr_wid"] = tokens[2:]
+                    temp_tks = []
+                    for tk in tokens[2:]:
+                        temp_tks.append(tk.split('_')[0])
+                    stn_detail["amr_wid"] = temp_tks
             else:
                 # 分析amr依存关系图
                 graph_info += line
         parse_input = graph_info.strip().replace('\n', ' ')
         if parse_input == "":
             stn_detail["amr_graph"] = None
+            stn_detail["verb_list"] = None
         else:
             parse_output, verb_list = amr_graph_parse(parse_input)
             stn_detail["amr_graph"] = parse_output
+            # 删除不在句子中的父节点，得到动词
+            token_ids = stn_detail["amr_wid"]
+            for vb in verb_list:
+                if vb[0] not in token_ids:
+                    verb_list.remove(vb)
+            stn_detail["verb_list"] = verb_list
         amr_parsed_data.append(stn_detail)
     return amr_parsed_data
 
@@ -156,7 +174,76 @@ def get_triple(father_node, son_node):
     return relation_tuple
 
 
+# 根据父节点下标提取
+def parse_wid(word_ids, stn_tokens):
+    stn_len = len(stn_tokens)
+    ids = word_ids.split('_')
+    temp_word = []
+    last_order = 0
+    if len(ids) > 1:
+        temp_char = []
+        for i in ids:
+            if 'x' in i:
+                word_order = int(i.split('x')[1])
+                if word_order > stn_len:
+                    continue
+                last_order = word_order
+                temp_word.append(stn_tokens[word_order - 1])
+            else:
+                word_inner_order = int(i)
+                if word_inner_order >= len(temp_word[-1]):
+                    continue
+                temp_char.append(temp_word[-1][word_inner_order - 1])
+        if len(temp_char) > 0:
+            temp_word[-1] = ''.join(temp_char)
+    else:
+        last_order = int(ids[0].split('x')[1])
+        if last_order >= stn_len:
+            return None, None
+        temp_word = stn_tokens[last_order - 1]
+    return last_order, temp_word
+
+
+def judge_passive_sentence(sentence_amr_data):
+    passive_flag = False
+    v_arg1 = None
+    stn_tokens = sentence_amr_data["amr_snt"]
+    amr_graph = sentence_amr_data["amr_graph"]
+    verbs = sentence_amr_data["verb_list"]
+    if amr_graph is None:
+        return passive_flag, v_arg1
+    v_idx = []
+    for v in verbs:
+        v_idx.append(v[0])
+    for rel in amr_graph:
+        if rel[0] in v_idx and rel[2] == "arg1":
+            if rel[3] is not None and "把" in rel[3]:
+                continue
+            father_word_order, father_word = parse_wid(rel[0], stn_tokens)
+            son_word_order, son_word = parse_wid(rel[1], stn_tokens)
+            if son_word is not None and father_word is not None and son_word_order < father_word_order:
+                passive_flag = True
+                v_arg1 = {"V": father_word, "Arg1": son_word}
+    return passive_flag, v_arg1
+
+
 if __name__ == '__main__':
-    amr_file = "../data/base/amr小学语文全.txt"
+    amr_file = "../data/base/amr微博全.txt"
+    save_file = "../data/res/amr微博被动句.txt"
+    f = open(save_file, "w+", encoding="utf8")
     res = get_amr_data(amr_file)
-    print("解析完毕！")
+    stn_num = len(res)
+    print("AMR句子依存图解析完毕！共{}个句子".format(stn_num))
+    time.sleep(1)
+    passive_count = 0
+    for i in tqdm(range(1461, stn_num)):
+
+        stn_amr_data = res[i]
+        sentence = ''.join(stn_amr_data["amr_snt"])
+        passive_stn, passive_action = judge_passive_sentence(stn_amr_data)
+        if passive_stn:
+            passive_count += 1
+        write_info = str(passive_stn) + "|||" + str(passive_action) + "|||" + sentence + '\n'
+        f.write(write_info)
+    print("被动句判定完毕！共{}个被动句".format(passive_count))
+    f.close()
