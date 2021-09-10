@@ -228,15 +228,15 @@ def judge_passive_sentence(sentence_amr_data):
 
 
 if __name__ == '__main__':
-    amr_file = "../data/base/amr微博全.txt"
-    save_file = "../data/res/amr微博被动句.txt"
+    amr_file = "../data/base/amr小学语文全.txt"
+    save_file = "../data/res/amr小学语文被动句.txt"
     f = open(save_file, "w+", encoding="utf8")
     res = get_amr_data(amr_file)
     stn_num = len(res)
     print("AMR句子依存图解析完毕！共{}个句子".format(stn_num))
     time.sleep(1)
     passive_count = 0
-    for i in tqdm(range(1461, stn_num)):
+    for i in tqdm(range(0, stn_num)):
 
         stn_amr_data = res[i]
         sentence = ''.join(stn_amr_data["amr_snt"])
