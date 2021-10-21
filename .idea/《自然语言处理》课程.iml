@@ -3,8 +3,10 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/被动句实验/judge/judge" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Bert预训练/bert" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/唐诗情感分类实验/utils" isTestSource="false" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.6 (torch)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Remote Python 3.6.13 (sftp://y202202025@223.2.17.241:22/home/y202202025/.conda/envs/py36torch1.5/bin/python)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

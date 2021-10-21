@@ -4,6 +4,22 @@ from tqdm import tqdm
 ltp = LTP()
 
 
+def open_amr_txt(filepath):
+    news_data = []
+    ff = open(filepath, "r", encoding="utf8")
+    while True:
+        line = ff.readline()
+        if not line:
+            break
+        if len(line.strip()) == 0 or line == '\n':
+            continue
+        if "::snt" in line:
+            tokens = line.strip().split()
+            if len(tokens) > 2:
+                news_data.append(''.join(tokens[2:]))
+    return news_data
+
+
 def open_news_txt(filepath):
     news_data = []
     ff = open(filepath, "r", encoding="utf8")
@@ -23,12 +39,11 @@ def open_news_txt(filepath):
     return news_data
 
 
-
 def data_parser(sent_list):
     sent_seg_list, hidden = ltp.seg(sent_list)  # 分词
     sent_srl_list = ltp.srl(hidden)  # 语义角色标注
     sent_pos_tag = ltp.pos(hidden)  # 词性标注
-    sent_dep_tag = ltp.dep(hidden)    # 依存句法分析
+    sent_dep_tag = ltp.dep(hidden)  # 依存句法分析
     sent_sdp_graph = ltp.sdp(hidden, mode="graph")  # 语义依存图
     return {"seg": sent_seg_list, "dep": sent_dep_tag, "pos": sent_pos_tag, "srl": sent_srl_list, "sdp": sent_sdp_graph}
 
@@ -62,27 +77,41 @@ def extract_info(sent_ltp_data, save_file_path):
 
         # 通过句法依存分析进一步筛选
         wait_pop = []
-        has_fob_idx = []
+        has_flag_idx = []   # 带标记的动词索引
         for v_idx in real_verb.keys():
-            has_att = False
+            invalid_verb = False
             temp = v_idx + 1
             for edge in dep_list[i]:
-                if edge[1] == temp and edge[2] == "ATT":
-                    has_att = True
+                if edge[1] == 0 and edge[2] == "HED":  # 句子主干是否为动词
+                    if edge[0] != temp:
+                        invalid_verb = True
+                        break
+                if edge[1] == temp and edge[2] == "ATT":    #
+                    invalid_verb = True
                     break
-                if edge[1] == temp and edge[2] == "ADV" and sent_tokens[edge[0]-1] in ["被", "把", "将", "给", "由", "用"]:
-                    has_att = True
+                # 动词是否有标记词
+                if edge[1] == temp and edge[2] == "ADV" and sent_tokens[edge[0] - 1] in ["被", "叫", "给", "由", "让"]:
+                    invalid_verb = True
+                    has_flag_idx.append(v_idx)
                     break
-                # if edge[1] == temp and edge[2] == "FOB":
-                #     has_fob_idx.append(v_idx)
-            if has_att:
-                wait_pop.append(v_idx)
-        for idx in wait_pop:
-            real_verb.pop(idx)
 
+            if invalid_verb:
+                wait_pop.append(v_idx)
+
+        extract_mode = "no_flag"
+        candidate_verb = {}
+        # 抽取无标记被动句
+        if extract_mode is "no_flag":
+            for idx in wait_pop:
+                real_verb.pop(idx)
+            candidate_verb = real_verb
+        # 抽取带标记被动句
+        if extract_mode is "has_flag":
+            for idx in has_flag_idx:
+                candidate_verb[idx] = real_verb.get(idx)
 
         # 找出动词相关联的语义依存边
-        for v_id in real_verb.keys():
+        for v_id in candidate_verb.keys():
             flag = False
             arg1_idx = []
             temp_idx = v_id + 1
@@ -98,7 +127,7 @@ def extract_info(sent_ltp_data, save_file_path):
             if flag:
                 no_flag = True
                 for idx in arg1_idx:
-                    verb_arg1.append({"verb": sent_tokens[v_id], "arg1": sent_tokens[idx-1]})
+                    verb_arg1.append({"verb": sent_tokens[v_id], "arg1": sent_tokens[idx - 1]})
         if no_flag:
             # 写入文件
             f.write(''.join(sent_tokens) + ' # ' + str(verb_arg1) + '\n')
@@ -125,7 +154,6 @@ def find_role(srl_list):
                         temp_list.append(j)
                     role_idx_set = set(temp_list) | role_idx_set
     return role_idx_set
-
 
 
 def get_amr_data(filepath):
@@ -165,27 +193,31 @@ def main():
         ltp_data = data_parser([s])
         extract_info(ltp_data, save_file)
 
-def newsmain():
-    newsdata = open_news_txt("../data/base/199801.txt")
-    savefile = "../data/res/人民日报199801抽取结果(FOB).txt"
+
+def newsmain(news_file):
+    newsdata = open_news_txt(news_file)
+    savefile = "../data/res/人民日报199801抽取结果(2~6).txt"
     for i in tqdm(range(len(newsdata))):
         s = newsdata[i]
         ltp_data = data_parser([s])
         extract_info(ltp_data, savefile)
 
-if __name__ == '__main__':
 
+def amr_main():
+    amr_file_data = open_amr_txt("../data/base/amr小学语文全.txt")
+    save_file = "../data/res/amr语文（有标记）.txt"
+    for i in tqdm(range(251, len(amr_file_data))):  # 321
+        s = amr_file_data[i]
+        ltp_data = data_parser([s])
+        extract_info(ltp_data, save_file)
+
+
+if __name__ == '__main__':
     # test()
     # main()
-    newsmain()
-    # newsdata = open_news_txt("../data/base/199801.txt")
-
-
-
-
-
-
-
-
-
-
+    # newsmain()
+    amr_main()
+    # for i in range(4, 7):
+    #     filename = "19980" + str(i) + ".txt"
+    #     filepath = "../data/base/199801/" + filename
+    #     newsmain(filepath)
