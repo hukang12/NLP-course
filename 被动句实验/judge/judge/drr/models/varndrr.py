@@ -51,7 +51,7 @@ class VarNDRR16(nn.Module):
     def forward(self, input, input_padded, z):
         """
         `forward` computes logprob of y and x given z, the probability
-        model p(y,x|z) = p(y|z)p(x|z) = p(y|z)p(x_1|z)p(x_2|z)
+        models p(y,x|z) = p(y|z)p(x|z) = p(y|z)p(x_1|z)p(x_2|z)
 
         Args
         ----------
