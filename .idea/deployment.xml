@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="y202202025@223.2.17.241:22 password">
+  <component name="PublishConfigData" autoUpload="Always" serverName="y202202025@zjs3.njnu.cc:22 password">
     <serverData>
       <paths name="y202202025@223.2.17.241:22 password">
         <serverdata>
           <mappings>
-            <mapping deploy="/code/被动句/NLP-course" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/home/y202202025/code/被动句/NLP-course" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>
@@ -13,6 +13,13 @@
         <serverdata>
           <mappings>
             <mapping deploy="/home/y202202025/code/被动句/NLP-course" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="y202202025@zjs3.njnu.cc:22 password">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/桌面/code/tangpoem" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>

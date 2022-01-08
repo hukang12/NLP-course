@@ -29,7 +29,8 @@ def danyinjie(word_list):
 
 # 加载唐诗三百首数据
 def data_load(tokenized_file, vocab_file=None):
-    vocab_words = read_excel_file(filename=vocab_file, sheet_id=0, column_id_list=[0])
+    # vocab_words = read_excel_file(filename=vocab_file, sheet_id=0, column_id_list=[0])
+    vocab_words = read_csv_file(filename=vocab_file, column_name=['单词'])['单词']
     print(len(vocab_words))
 
     tang1600 = read_csv_file(tokenized_file, ["分词", "小类", "大类"])
@@ -42,9 +43,9 @@ def data_load(tokenized_file, vocab_file=None):
     tiny_label_docs = dict()
 
     for i in range(poem_num):
-        content = tokenized_poems[i].split()
+        content = tokenized_poems[i].split(' ')
         content = who_in_vocab(vocab_words, content)
-        # content = danyinjie(content)
+        content = danyinjie(content)
         tiny_label = poem_tiny_label[i]
         big_label = poem_big_label[i]
 
@@ -58,34 +59,18 @@ def data_load(tokenized_file, vocab_file=None):
             big_label_docs[big_label] = list()
 
         big_label_docs[big_label].extend(content)
-
-    '''
-       # 每个文档的词表
-        if label not in doc_vocab.keys():
-            doc_vocab[label] = set()
-        temp_set = set(content)
-        doc_vocab[label] = doc_vocab[label] | temp_set
-    return doc_data, doc_vocab
-       '''
     return big_label_docs, tiny_label_docs
 
 
 # 统计一篇文档中每个词的词频
 def get_word_freq(doc_data):
     word_freq = {}
-    # words_num = len(doc_data)
-    # if words_num <= 0:
-    #     print("诗歌长度为0！")
-    #     return None
-
     for word in doc_data:
         if str(word) in word_freq.keys():
             count = word_freq[str(word)]
             word_freq[str(word)] = count + 1
         else:
             word_freq[str(word)] = 1
-    # for k, v in word_freq.items():
-    #     word_freq[k] = v/words_num
     return word_freq
 
 
@@ -95,7 +80,6 @@ def doc_freq(word, docs):
     for doc in docs:
         if word in doc:
             count += 1
-
     return count
 
 
@@ -113,7 +97,7 @@ def get_tf_idf(doc_list):
             word_idf = math.log(doc_num / doc_have_word + 1)
             tf_idf = word_tf * word_idf
             word_tf_idf[i] = [tf_idf, words_freq[i], doc_have_word]
-        top_of_tfidf = select_top(word_tf_idf, 50)
+        top_of_tfidf = select_top(word_tf_idf, 100)
         final_res[cls] = top_of_tfidf
     return final_res
 
@@ -182,9 +166,11 @@ def parse_res(doc_vocab, word_features):
 
 
 if __name__ == '__main__':
-    data_set = data_load("data/1600/1600标注唐诗.csv")
-    print("文档数目:", len(data_set))
-    features = get_tf_idf(data_set)  # 所有词的TF-IDF值
-    # res = parse_res(label_set, features)
-    save_path = '../data/res/唐诗三百首TF-IDF.xls'
-    save2excel(features, save_path)
+    vocab_file = "../data/1600/1600词表（去停用词）.csv"
+    tokenized_file = "../data/1600/1600标注唐诗.csv"
+    tang1600_big, tang1600_tiny = data_load(tokenized_file, vocab_file=vocab_file)
+    features_big = get_tf_idf(tang1600_big)  # 所有词的TF-IDF值
+    features_tiny = get_tf_idf(tang1600_tiny)  # 所有词的TF-IDF值
+    save_path = '../data/res/TFIDF/1600TF-IDF(多音节).xlsx'
+    save2excel(features_big, save_path)
+    save2excel(features_tiny, save_path)

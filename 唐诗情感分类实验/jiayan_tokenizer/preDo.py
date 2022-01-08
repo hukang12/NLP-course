@@ -3,30 +3,31 @@ import operator
 from tqdm import tqdm
 import pandas as pd
 from collections import Counter
-from FileReadWrite import read_csv_file, read_txt_file
 from jiayan import load_lm
 from jiayan import WordNgramTokenizer
 from jiayan import CharHMMTokenizer
-from jiayan import PMIEntropyLexiconConstructor
 
 punctuation = '，。！？；：:,.!,;:?、"\''
 
 
-# 构建词库
-def construct_vocab(lexicon, save_csv_file):
-    constructor = PMIEntropyLexiconConstructor()
-    constructor.MIN_WORD_FREQ = 2
-    lexicon = constructor.construct_lexicon(lexicon)
-    constructor.save(lexicon, save_csv_file)
+# 读取txt
+def read_txt_file(filename):
+    data_list = []
+    f = open(filename, 'r', encoding="utf8")
+    lines = f.readlines()
+    for line in lines:
+        data_list.append(line.strip())
+
+    f.close()
+    return data_list
 
 
-# 构建词库2
-def construct_vocab_2(lexicon, save_csv_file, stop_word_file):
+# 构建词表、统计词频
+def construct_vocab(lexicon, save_csv_file, stop_word_file):
     stopwords = read_txt_file(stop_word_file)
-    data = read_csv_file(filename=lexcion, column_name=['分词'])['分词']
     all_words = []
 
-    for poem in data:
+    for poem in lexicon:
         all_words.extend(poem.split())
 
     res = Counter(all_words)
@@ -53,7 +54,7 @@ def ngram_tokenize(text):
     return list(tokenizer.tokenize(text))
 
 
-# 甲言hmm分词
+# 甲言hmm分词（分词效果更好）
 def hmm_tokenize(text, klm_file):
     lm = load_lm(klm_file)
     tokenizer = CharHMMTokenizer(lm)
@@ -105,20 +106,33 @@ def save_token2txt(tokens_list, save_file):
     f.close()
 
 
-# 对CSV文本进行分词
-def tokenize_1600(remove_punc=False):
-    data_file = "../data/1600/1600标注唐诗.csv"
-    klm_file = "../jiayan_tokenizer/jiayan/jiayan.klm"
-    df = pd.read_csv(data_file)
+# 对需分词的文本进行分词并统计词频
+def my_tokenize(data_file, save_tokenized_file, save_vocab_file, stop_words, remove_punc=False, ):
+    klm_file = "jiayan/jiayan.klm"
+    df = pd.read_csv(data_file, encoding='gbk')
     sentence_list = df["内容"].tolist()
     tokens = tokenize_data(sentence_list, "hmm", klm_file, remove_punc)
-    save_token2txt(tokens, "../data/res/1600分词(不去标点).txt")
+    save_token2txt(tokens, save_tokenized_file)
+    construct_vocab(tokens, save_vocab_file, stop_words)
 
 
 if __name__ == '__main__':
-    # tokenize_1600(remove_punc=False)
-    lexcion = "../data/1600/1600标注唐诗.csv"
-    df_save_file = "词频_杜甫.csv"
-    lb_save_file = "词频_李白.csv"
-    stop_words = "../data/stopword.txt"
-    construct_vocab_2(lexcion, save_file, stop_words)
+    stop_words = "data/stopword(标点).txt"
+    data_file_lb = "data/李白.csv"
+    data_file_df = "data/杜甫.csv"
+
+    save_tokenized_file_lb = "res/李白_分词.txt"
+    save_tokenized_file_df = "res/杜甫_分词.txt"
+
+    save_file_lb = "res/词频_李白(只去除标点).csv"
+    save_file_df = "res/词频_杜甫(只去除标点).csv"
+
+    my_tokenize(data_file=data_file_lb,
+                save_tokenized_file=save_tokenized_file_lb,
+                save_vocab_file=save_file_lb,
+                stop_words=stop_words)
+
+    my_tokenize(data_file=data_file_df,
+                save_tokenized_file=save_tokenized_file_df,
+                save_vocab_file=save_file_df,
+                stop_words=stop_words)

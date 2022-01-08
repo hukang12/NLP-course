@@ -3,5 +3,5 @@
   <component name="JavaScriptSettings">
     <option name="languageLevel" value="ES6" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Remote Python 3.6.13 (sftp://y202202025@223.2.17.241:22/home/y202202025/.conda/envs/py36torch1.5/bin/python)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Remote Python 3.6.13 (sftp://y202202025@zjs3.njnu.cc:22/home/y202202025/.conda/envs/pytorch/bin/python3.6)" project-jdk-type="Python SDK" />
 </project>
